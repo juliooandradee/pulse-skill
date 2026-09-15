@@ -6,7 +6,7 @@ Uma skill para transformar o histórico **público e acessível** de um perfil e
 
 ## Comece aqui
 
-1. [Baixe a skill Pulse 1.0.0](https://github.com/juliooandradee/pulse-skill/releases/download/v1.0.0/pulse-v1.0.0.zip), ou use o link da pasta `pulse/` na versão publicada.
+1. [Baixe a skill Pulse 1.0.0](https://github.com/juliooandradee/pulse-skill/releases/download/v1.0.0/pulse-v1.0.0.zip), ou use a [pasta `pulse/` na revisão fixa](https://github.com/juliooandradee/pulse-skill/tree/7ce85c2877acca7a79f4720128eb6dc92f7c074e/pulse).
 2. Escolha sua ferramenta abaixo. Instale **somente a pasta `pulse`**. Confira origem, revisão e destino; preserve versões existentes. Não execute scripts nem instale dependências/plugins durante a instalação.
 3. Informe seu @ público, objetivo, período e identidade visual. Comece com uma amostra e revise o que a IA encontrou.
 4. Monte o painel local com a IA. Login para equipe, hospedagem e atualização semanal são etapas opcionais posteriores.
@@ -49,3 +49,5 @@ Pulse 1.0.0 consolida a interface e o fluxo construídos para este projeto, com 
 O código e as instruções do Pulse estão sob MIT. Fontes e fotografias mantêm suas licenças: veja [créditos](THIRD_PARTY.md). A marca/assinatura identifica a origem, sem representar endosso a resultados ou perfis analisados.
 
 Consulte [validação da release](VALIDATION.md). Os testes locais não substituem a verificação de login e permissões no seu próprio backend.
+
+Revisão da skill 1.0.0: `7ce85c2877acca7a79f4720128eb6dc92f7c074e`. A demonstração e este guia podem receber ajustes sem alterar os arquivos fixados nessa versão.
