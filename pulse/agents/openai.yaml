@@ -1,0 +1,5 @@
+interface:
+  display_name: "Pulse · by julio andrade"
+  short_description: "Do histórico público à próxima pauta de conteúdo"
+  brand_color: "#102A31"
+  default_prompt: "Use $pulse para montar meu painel editorial a partir do meu perfil público, com fontes, pautas e recriações."

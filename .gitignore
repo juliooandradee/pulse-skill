@@ -1,0 +1,12 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+.vercel/
+data/raw/
+data/working/
+reports/private/
+*.log
+__pycache__/
+*.pyc

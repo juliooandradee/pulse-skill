@@ -1,0 +1,96 @@
+{
+  "profile": "meu-perfil",
+  "observed_at": "2026-01-01T12:00:00Z",
+  "updated_at": "2026-01-01T12:00:00Z",
+  "source": "Dados sintéticos para validar o template",
+  "scope": "Exemplo fictício, não análise de perfil",
+  "taxonomy": [
+    "Exemplo editorial"
+  ],
+  "observations": [
+    {
+      "content_id": "exemplo-post",
+      "title": "Post fictício para testar o painel",
+      "url": "https://example.com/post",
+      "format": "reel",
+      "published_at": "2026-01-01",
+      "candidate_line": "Exemplo editorial",
+      "is_paid": "desconhecido"
+    }
+  ],
+  "metrics": [
+    {
+      "content_id": "exemplo-post",
+      "views": 120,
+      "likes": 12,
+      "comments": 1,
+      "shares": null,
+      "saves": null,
+      "observed_at": "2026-01-01T12:00:00Z"
+    }
+  ],
+  "sources": [],
+  "source_catalog": [],
+  "ideas": [
+    {
+      "id": "remake-exemplo-post-carrossel",
+      "title": "Exemplo de recriação",
+      "kind": "Recriação de post",
+      "format": "carrossel",
+      "angle": "Transformar uma demonstração fictícia em passos para revisão.",
+      "evidence": "Dados sintéticos; não representa resultado real.",
+      "post_ids": [
+        "exemplo-post"
+      ],
+      "source_ids": []
+    }
+  ],
+  "community_comments": [
+    {
+      "comment_id": "exemplo-comment",
+      "content_id": "exemplo-post",
+      "author_handle": "participante.exemplo",
+      "comment_text": "Pergunta fictícia: pode mostrar os passos?",
+      "like_count": 2,
+      "reply_count_reported": 0,
+      "signal_type": "Pedido explícito",
+      "theme": "Exemplo editorial",
+      "is_substantive": true,
+      "is_cta_like": false,
+      "is_creator_reply": false,
+      "url": "https://example.com/post",
+      "observed_at": "2026-01-01T12:00:00Z"
+    }
+  ],
+  "coverage": {
+    "profile_reported_posts": null,
+    "inventoried_posts": 1,
+    "posts_with_views": 1,
+    "comments_catalogued": 1,
+    "eligible_comment_universe": 1,
+    "dates_known": 1,
+    "posts_with_covers": 0,
+    "detailed_insights_posts": 0,
+    "candidate_classified_posts": 1,
+    "posts_with_comment_cta": 0,
+    "posts_with_catalogued_comments": 1,
+    "substantive_comments": 1,
+    "automation_status": "Exemplo manual"
+  },
+  "account": {},
+  "profile_snapshot": {},
+  "participant_profiles": {},
+  "comment_priorities": [],
+  "editorial_analysis": {
+    "summary": [],
+    "recurring_patterns": [],
+    "limitations": [
+      "Dados sintéticos, apenas para demonstração."
+    ]
+  },
+  "curation": {
+    "editions": [],
+    "last_run": null,
+    "schedule_label": "Manual · exemplo"
+  }
+}
