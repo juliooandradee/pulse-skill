@@ -17,4 +17,8 @@ Conferência em 15/09/2026. O pacote distribui código, instruções e um exempl
 - A importação e mesclagem de JSON foram testadas em código. O seletor de upload do Chrome não pôde ser validado de ponta a ponta porque a extensão recusou acesso a arquivos locais. A configuração do navegador não foi alterada.
 - Login e Admin online acompanham modelos de código. Nenhum novo backend foi provisionado; políticas SQL/RLS, storage e entrega de login precisam ser validados no destino de cada pessoa. Testes do handler usam respostas simuladas e não comprovam configuração real do servidor.
 - O exemplo sintético comprova renderização e persistência local, não coleta de Instagram. Não há promessa de acesso a todo histórico, comentários, fotos ou métricas privadas.
-- Instalar o pacote não programa atualizações, publica um app, conecta contas ou contrata serviços. A página de demonstração é uma prévia; a publicação no GitHub refere-se aos arquivos da distribuição.
+- Instalar o pacote não programa atualizações, publica um app, conecta contas ou contrata serviços. A publicação original da skill no GitHub distribui os arquivos. A demonstração foi publicada posteriormente, após aprovação expressa, conforme o registro abaixo.
+
+## Publicação da demonstração
+
+Em 15/09/2026, após aprovação do criador, a página foi publicada em [https://pulse-julio-andrade.vercel.app/](https://pulse-julio-andrade.vercel.app/). Projeto Vercel `pulse-julio-andrade`, diretório `demo/`, produção com estado READY. A interface pública abriu no Chrome; as três imagens do Pulse News carregaram e o botão de cópia apresentou sucesso com a revisão fixa da skill. Não há backend, variáveis de aplicação ou dados privados na página demonstrativa. O pacote fixado em 1.0.0 não foi alterado pela publicação da página.

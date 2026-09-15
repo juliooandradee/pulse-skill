@@ -1,6 +1,6 @@
 # Pulse · by julio andrade — demonstração 1.0.0
 
-Revisão de 15/09/2026. A apresentação permanece **rascunho para revisão**, sem ativação de site público. O pacote da skill tem distribuição própria em [GitHub](https://github.com/juliooandradee/pulse-skill).
+Revisão de 15/09/2026. A apresentação foi **publicada após aprovação** em [pulse-julio-andrade.vercel.app](https://pulse-julio-andrade.vercel.app/). O pacote da skill tem distribuição própria em [GitHub](https://github.com/juliooandradee/pulse-skill).
 
 ## Experiência
 
@@ -25,4 +25,4 @@ A página informa que a análise usa apenas informações públicas acessíveis,
 
 Conferidos em desktop e 390 px: oito abas, carregamento das três fotos de notícias, busca e ordenação, período ilustrativo, check/reabertura persistente, tema claro/escuro e cópia dos prompts. Sem transbordamento horizontal na página nas oito abas. O pacote do app e os limites da validação estão documentados em `../VALIDATION.md` no repositório público.
 
-A pasta é independente do painel privado e não publica nem sincroniza a base de produção. Abra por um servidor local limitado a `127.0.0.1`. A prévia preparada para revisão usa a porta 8751.
+A pasta é independente do painel privado e não publica nem sincroniza a base de produção. Hospedagem estática na Vercel, projeto `pulse-julio-andrade`, raiz `demo/`. A branch `main` do repositório está conectada às atualizações. Para revisar localmente, use um servidor limitado a `127.0.0.1`; a prévia local usa a porta 8751.

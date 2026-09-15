@@ -4,6 +4,8 @@ Uma skill para transformar o histórico **público e acessível** de um perfil e
 
 **Não precisa vincular Instagram, sincronizar a conta ou fornecer senha.** A IA usa as publicações e os sinais que conseguir acessar publicamente. Não obtém Insights privados nem garante acesso a todo o histórico.
 
+[**Explore a demonstração e copie o prompt de instalação**](https://pulse-julio-andrade.vercel.app/)
+
 ## Comece aqui
 
 1. [Baixe a skill Pulse 1.0.0](https://github.com/juliooandradee/pulse-skill/releases/download/v1.0.0/pulse-v1.0.0.zip), ou use a [pasta `pulse/` na revisão fixa](https://github.com/juliooandradee/pulse-skill/tree/7ce85c2877acca7a79f4720128eb6dc92f7c074e/pulse).
@@ -40,7 +42,7 @@ ChatGPT Work e Codex compartilham uso segundo a [documentação da OpenAI](https
 
 ## Demonstração
 
-`demo/` contém a apresentação visual e um painel interativo com **dados fictícios identificados**. A página permanece uma prévia para revisão; não foi ativado um site público nesta release. As capas do criador são imagens de demonstração, não dados de performance. Nenhum comentário real, foto de participante real, e-mail privado, senha, token ou base de produção faz parte do pacote.
+`demo/` contém a apresentação visual e um painel interativo com **dados fictícios identificados**. A [demonstração pública](https://pulse-julio-andrade.vercel.app/) foi publicada após a aprovação de 15/09/2026. As capas do criador são imagens de demonstração, não dados de performance. Nenhum comentário real, foto de participante real, e-mail privado, senha, token ou base de produção faz parte do pacote.
 
 ## Origem e validação
 
