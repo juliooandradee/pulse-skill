@@ -8,7 +8,7 @@ Uma skill para transformar o histórico **público e acessível** de um perfil e
 
 ## Comece aqui
 
-1. [Baixe a skill Pulse 1.0.0](https://github.com/juliooandradee/pulse-skill/releases/download/v1.0.0/pulse-v1.0.0.zip), ou use a [pasta `pulse/` na revisão fixa](https://github.com/juliooandradee/pulse-skill/tree/7ce85c2877acca7a79f4720128eb6dc92f7c074e/pulse).
+1. [Baixe a skill Pulse 2.0.0](https://github.com/juliooandradee/pulse-skill/releases/download/v2.0.0/pulse-v2.0.0.zip), ou use a [pasta `pulse/` na revisão fixa](https://github.com/juliooandradee/pulse-skill/tree/v2.0.0/pulse).
 2. Escolha sua ferramenta abaixo. Instale **somente a pasta `pulse`**. Confira origem, revisão e destino; preserve versões existentes. Não execute scripts nem instale dependências/plugins durante a instalação.
 3. Informe seu @ público, objetivo, período e identidade visual. Comece com uma amostra e revise o que a IA encontrou.
 4. Monte o painel local com a IA. Login para equipe, hospedagem e atualização semanal são etapas opcionais posteriores.
@@ -46,10 +46,16 @@ ChatGPT Work e Codex compartilham uso segundo a [documentação da OpenAI](https
 
 ## Origem e validação
 
-Pulse 1.0.0 consolida a interface e o fluxo construídos para este projeto, com configuração própria para cada pessoa. A ideia inicial de dashboard orientado por skill foi inspirada no [Gravity Blueprint de Paulo](https://github.com/paulofai/gravity-blueprint). Este pacote não copia ou redistribui os arquivos da skill Gravity Blueprint instalada.
+Pulse 2.0.0 consolida a interface e o fluxo construídos para este projeto, com configuração própria para cada pessoa. A ideia inicial de dashboard orientado por skill foi inspirada no [Gravity Blueprint de Paulo](https://github.com/paulofai/gravity-blueprint). Este pacote não copia ou redistribui os arquivos da skill Gravity Blueprint instalada.
 
 O código e as instruções do Pulse estão sob MIT. Fontes e fotografias mantêm suas licenças: veja [créditos](THIRD_PARTY.md). A marca/assinatura identifica a origem, sem representar endosso a resultados ou perfis analisados.
 
 Consulte [validação da release](VALIDATION.md). Os testes locais não substituem a verificação de login e permissões no seu próprio backend.
 
-Revisão da skill 1.0.0: `7ce85c2877acca7a79f4720128eb6dc92f7c074e`. A demonstração e este guia podem receber ajustes sem alterar os arquivos fixados nessa versão.
+Revisão da skill 2.0.0: `v2.0.0`. A demonstração e este guia podem receber ajustes sem alterar os arquivos fixados nessa versão.
+
+## Novo na versão 2.0
+
+Visão geral da produção, calendário semanal e mensal, campanhas, responsáveis, filtros, importação e ordenação de imagens do Canva, ficha de copy e legenda, agendamento oficial pela Meta e resultados com cobertura informada. Inclui o adaptador opcional do CRM e comandos para o agente preparar e acompanhar posts. Leia o [guia de publicação](pulse/references/publication.md).
+
+O planejamento funciona localmente. Publicação automática e resultados exigem seu próprio backend, sua conta autorizada na Meta e, para automações, um CRM compatível. Não há dados, contas ou credenciais do criador no pacote.

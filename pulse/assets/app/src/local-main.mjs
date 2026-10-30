@@ -1,3 +1,5 @@
+import {mountCloudPublication} from './publication-live.mjs';
+import {createLocalPublicationRepository} from './publication-local-repository.mjs';
 import initialData from './data.mjs';
 import {mountDashboard} from './dashboard.mjs';
 import {createIdeaProgress} from './idea-progress.mjs';
@@ -13,7 +15,7 @@ function progress(){return createIdeaProgress({
  reopen:async id=>{localStorage.setItem(key+':checks',JSON.stringify(progressRows().filter(x=>x.idea_id!==id)));}
 });}
 function open(){
- instance?.destroy();instance=mountDashboard(data,{handle:data.profile},{admin:true,local:true,ideaProgress:progress(),
+ instance?.destroy();instance=mountDashboard(data,{handle:data.profile},{admin:true,local:true,ideaProgress:progress(),publication:root=>mountCloudPublication(root,{repository:createLocalPublicationRepository(data.profile)}),
   getFileUrl:async path=>{if(!/^brand\/[A-Za-z0-9_./-]+$/.test(path)||path.split('/').includes('..'))throw new Error('Arquivo inválido');return new URL(path,location.href.split('#')[0]).href;}});
  document.getElementById('login').hidden=true;document.getElementById('workspace').hidden=false;
  document.getElementById('updated-label').textContent=data.updated_at?'Última coleta: '+new Date(data.updated_at).toLocaleString('pt-BR'):'Base vazia · importe dados conferidos para começar';
