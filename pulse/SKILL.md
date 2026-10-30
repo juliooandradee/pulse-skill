@@ -2,7 +2,7 @@
 name: pulse
 description: Construir e atualizar um painel privado de conteúdo para médicos e profissionais da saúde, a partir de publicações públicas do Instagram, conversas da comunidade e fontes de inovação médica. Inclui curadoria, recriações de posts e acompanhamento das propostas feitas.
 metadata:
-  version: "1.0.0"
+  version: "2.0.0"
 ---
 
 # Pulse · by julio andrade
@@ -43,3 +43,7 @@ Siga [atualizações](references/updates.md). Preserve dados brutos, IDs, ediç�
 Comece em modo manual. Uma rotina semanal pode reduzir leituras repetidas, mas só configure agenda e publicação quando solicitadas. Antes de sincronizar uma base privada, valide o destino e confira os dados remotos e os checks depois. Não confundir arquivos prontos, sincronização concluída e visualização autenticada validada.
 
 Finalize com um resultado curto: o que entrou, cobertura atual, limitações e onde revisar. Não chamar a amostra de análise completa de todo o Instagram.
+
+## Planejamento e publicação (2.0)
+
+Quando a pessoa pedir calendário, criação ou acompanhamento, leia [publicação](references/publication.md). Use o dashboard e o registro editorial existentes. O modo local inclui calendário, etapas e importação das imagens; publicar pela Meta requer acesso online e uma autorização própria da conta. A coleta pública continua independente dessa conexão opcional. Preserve abertura e copy aprovadas, salvo pedido explícito de alteração. Não trate instalação, aprovação de arte e autorização para publicar como a mesma ação.

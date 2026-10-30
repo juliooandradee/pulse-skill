@@ -10,3 +10,5 @@ reports/private/
 *.log
 __pycache__/
 *.pyc
+
+/pulse/assets/app/node_modules

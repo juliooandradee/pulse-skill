@@ -1,3 +1,5 @@
+import {mountCloudPublication} from './publication-live.mjs';
+import {createPublicationRepository} from './publication-repository.mjs';
 import {createClient} from '@supabase/supabase-js';
 import {createIdeaProgress} from './idea-progress.mjs';
 import {mountDashboard} from './dashboard.mjs';
@@ -23,7 +25,7 @@ async function loadWorkspace(){
   const {data:auth,error:authError}=await client.auth.getUser();if(version!==epoch)return;if(authError||!auth.user)throw new Error('Entre com sua conta para abrir o painel.');
   const {data:work,error:workError}=await client.from('pulse_workspaces').select('id,handle,title,owner_id').eq('id',config.workspaceId).single();if(version!==epoch)return;if(workError||!work)throw new Error('Seu e-mail ainda não tem acesso ao Pulse. Peça ao administrador para liberá-lo na aba Admin.');
   const {data:snapshot,error}=await client.from('pulse_datasets').select('payload').eq('workspace_id',work.id).eq('dataset_key','dashboard').single();if(version!==epoch)return;if(error||!snapshot)throw new Error('A base está sendo atualizada. Tente novamente em instantes.');
-  instance?.destroy();workspace=work;loadedRevision=snapshot.payload.updated_at;instance=mountDashboard(snapshot.payload,work,{getFileUrl,admin:work.owner_id===auth.user.id,teamRequest:body=>teamRequest(work.id,body),ideaProgress:progressFor(work.id)});$('login-message').textContent='';$('login').hidden=true;$('workspace').hidden=false;
+  instance?.destroy();workspace=work;loadedRevision=snapshot.payload.updated_at;instance=mountDashboard(snapshot.payload,work,{getFileUrl,admin:work.owner_id===auth.user.id,teamRequest:body=>teamRequest(work.id,body),ideaProgress:progressFor(work.id),publication:work.owner_id===auth.user.id?root=>mountCloudPublication(root,{repository:createPublicationRepository(client,work.id)}):undefined});$('login-message').textContent='';$('login').hidden=true;$('workspace').hidden=false;
  }catch(error){if(version!==epoch)return;clearWorkspace();$('login-message').textContent=error.message||'Não foi possível abrir o painel. Tente novamente.';}
  finally{if(version===epoch)loading=false;$('refresh-data').disabled=false;}
 }

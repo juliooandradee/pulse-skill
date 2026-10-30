@@ -1,24 +1,23 @@
-# Validação · Pulse 1.0.0
+# Validação · Pulse 2.0.0
 
-Conferência em 15/09/2026. O pacote distribui código, instruções e um exemplo sintético. Não executa uma coleta por conta própria ao ser instalado.
+Conferência em 30/10/2026. O pacote contém código e instruções, com a base local vazia. Instalar a skill não conecta contas nem publica conteúdo.
 
-## Conferido
+## Conferido nesta versão
 
-- 27 testes Node passaram: variedade de comentários e pessoas; recuperação de imagens; persistência, falhas e concorrência dos checks; importação incremental sem perder evidências; validação de estruturas inválidas; regras do handler de acesso da equipe.
-- App compilado com as dependências já existentes no ambiente. Nenhuma dependência foi instalada para preparar esta versão.
-- Metadados da skill e interface OpenAI, links locais e arquivos de referência conferidos. Validação equivalente do frontmatter feita com o parser YAML disponível; o validador Python da skill-creator não foi executado por falta de PyYAML.
-- App local aberto com a base vazia: dados desconhecidos permanecem ausentes. Cópia isolada com dados sintéticos validou as sete áreas, comentário de exemplo e recriação Reel → carrossel; check persistiu após recarregar e pôde ser desfeito.
-- Demonstração conferida no Chrome em desktop e 390 px: oito abas, temas claro/escuro, filtros, busca, ordenação, período, cópia dos prompts e persistência dos checks. As três fotografias do Pulse News carregaram. Sem transbordamento horizontal externo nas oito abas.
-- Origem das instruções de plataforma conferida na documentação oficial, citada no guia de instalação. Não foram instaladas cópias de teste em cada serviço.
-- Distribuição separada dos dados privados, com exemplos fictícios. Manifesto SHA-256 lista os arquivos da pasta instalável.
+- 66 testes Node passaram no pacote: planejamento, datas no fuso de São Paulo, filtros, métricas ausentes, autenticação, Meta, publicação e reconciliação sem duplicação, além dos testes existentes de dados e equipe. Execução limitada a três processos.
+- App compilado com as versões declaradas no lockfile. Interface local aberta no navegador, com calendário, etapas, biblioteca e publicação desabilitada até configurar uma conexão própria.
+- Migrações editoriais aplicadas em Postgres temporário usando os modelos genéricos do pacote. Testes de proprietário, viewer, visitante, isolamento, revisão concorrente, histórico, agendamento, conexão e publicação passaram; servidor de teste encerrado ao final. Vault, Auth e Storage foram simulados nesse banco local.
+- Na instalação privada do criador, o backend e o dashboard foram publicados. A Meta aceitou três imagens e legenda no teste real sem chamar a publicação. O Pulse consultou os modelos do CRM por uma conexão do servidor.
+- O adaptador do CRM passou em cinco testes de autenticação, restrição por conta e vínculo repetido. O build do CRM passou. A página protegida da solução passou nos sete testes de acesso e segurança.
+- O pacote público usa configurações próprias, sem tokens, contas editoriais pré-cadastradas ou dados do workspace privado. O manifesto SHA-256 identifica os arquivos instaláveis.
 
-## Limites
+## Cobertura e limites
 
-- A importação e mesclagem de JSON foram testadas em código. O seletor de upload do Chrome não pôde ser validado de ponta a ponta porque a extensão recusou acesso a arquivos locais. A configuração do navegador não foi alterada.
-- Login e Admin online acompanham modelos de código. Nenhum novo backend foi provisionado; políticas SQL/RLS, storage e entrega de login precisam ser validados no destino de cada pessoa. Testes do handler usam respostas simuladas e não comprovam configuração real do servidor.
-- O exemplo sintético comprova renderização e persistência local, não coleta de Instagram. Não há promessa de acesso a todo histórico, comentários, fotos ou métricas privadas.
-- Instalar o pacote não programa atualizações, publica um app, conecta contas ou contrata serviços. A publicação original da skill no GitHub distribui os arquivos. A demonstração foi publicada posteriormente, após aprovação expressa, conforme o registro abaixo.
+- O botão do Canva recebe as imagens exportadas, de duas a dez páginas. Não é uma conexão direta com a API do Canva.
+- O modo local guarda textos no navegador e imagens no IndexedDB; faça backup dos pacotes editoriais e preserve as imagens originais. Publicação, coleta automática e CRM exigem configurar o backend da própria pessoa.
+- O teste real da Meta validou a preparação do carrossel. Nenhum novo post de teste foi publicado; ativação de um fluxo não comprova entrega de DM.
+- Insights dependem das permissões da Meta. Valores ausentes são exibidos como indisponíveis, sem serem convertidos em zero. Os comandos de atualização trabalham em lotes.
+- O adaptador CRM é opcional e específico para o módulo Instagram do CRM IA para médicos. Não se conecta automaticamente a outros produtos.
+- Os testes locais de SQL usam interfaces simuladas de Supabase. Cada destino deve validar suas políticas, URLs de retorno, segredos, serviços de agendamento e permissões Meta antes de ativar publicações.
 
-## Publicação da demonstração
-
-Em 15/09/2026, após aprovação do criador, a página foi publicada em [https://pulse-julio-andrade.vercel.app/](https://pulse-julio-andrade.vercel.app/). Projeto Vercel `pulse-apresentacao`, diretório `demo/`, produção com estado READY. A interface pública abriu no Chrome; as três imagens do Pulse News carregaram e o botão de cópia apresentou sucesso com a revisão fixa da skill. Não há backend, variáveis de aplicação ou dados privados na página demonstrativa. O pacote fixado em 1.0.0 não foi alterado pela publicação da página.
+A demonstração pública em `demo/` contém dados fictícios. A versão anterior v1.0.0 permanece disponível no histórico do GitHub.
