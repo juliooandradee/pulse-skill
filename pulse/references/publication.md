@@ -13,7 +13,7 @@ O modo local salva textos no navegador e imagens no IndexedDB. Ele não publica 
 1. Configure o backend privado da própria pessoa conforme `private-access.md`.
 2. Revise e aplique as migrações em `assets/backend/migrations/` em ordem. Substitua `YOUR_PROJECT` nos agendadores e `your-app.example` nas funções pelo projeto e domínio autorizados. Crie as contas editoriais no próprio workspace; nenhum cadastro do criador acompanha o pacote.
 3. Publique `pulse-meta-connect`, `pulse-publisher` e `pulse-editorial` com os arquivos `_shared`. Os handlers validam sua própria autenticação; não retire essa validação. Configure app, segredo, configuração do login e retorno da Meta no servidor.
-4. Conecte a conta profissional pela tela oficial da Meta. Nunca solicite senha social ao agente. A autorização de publicação e as permissões para Insights podem ser diferentes; confira as permissões disponíveis e indique dados ausentes.
+4. Conecte a conta profissional pela tela oficial da Meta. Nunca solicite senha social ao agente. A publicação e os Insights são permissões diferentes. O passo a passo da Meta, da CLI e do fuso `America/Maceio` está em [instagram-pipeline.md](instagram-pipeline.md). Não aplique a migração no projeto de produção sem a aprovação de Júlio.
 5. Revise a prévia e use Testar sem publicar. Só agende após autorização do dono para o conteúdo, conta e horário. Alterar a copy cancela o agendamento; uma publicação confirmada permanece travada.
 6. Confira o ID e o permalink. Falha de resposta não autoriza repetir a publicação; use a reconciliação existente.
 
@@ -25,7 +25,7 @@ O usuário escolhe um modelo antes de agendar. Depois que a Meta confirma o post
 
 ## Trabalhar com o agente
 
-`assets/agent/pulse-editorial.mjs` oferece os comandos `list`, `save`, `templates`, `results` e `schedule`. `publish-external.mjs` importa imagens e testa ou agenda. Esses comandos exigem configuração local do servidor, fora do repositório. A chave privilegiada não deve ser enviada ao chat nem ao navegador. A instalação da skill não executa esses comandos nem autoriza publicar.
+`assets/agent/pulse-editorial.mjs` oferece os comandos `list`, `save`, `templates`, `results` e `schedule`. `publish-external.mjs` importa imagens de carrossel e testa ou agenda. `instagram-cli.mjs` configura, conecta, publica agora, agenda, lista, cancela e puxa Insights pela API oficial. Esses comandos exigem configuração local do servidor, fora do repositório. A chave privilegiada não deve ser enviada ao chat nem ao navegador. A instalação da skill não executa esses comandos nem autoriza publicar.
 
 Ao preparar um post, mantenha seu ID e sua revisão. Grave campanha, responsável, data e modelo em `origin.planning`. Confira a prévia e obtenha a autorização aplicável antes de usar o comando de agendamento. O pacote de agendamento deve conter `id`, `revision`, `scheduled_at` com fuso e `approved: true`.
 

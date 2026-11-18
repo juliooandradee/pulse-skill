@@ -10,7 +10,7 @@ function rig({consume=[{account_id:account,user_id:owner,expected_handle:'perfil
  const fetcher=async(input,options={})=>{
   const url=new URL(String(input));calls.push({url,options,body:options.body?JSON.parse(options.body):null});
   if(url.pathname==='/auth/v1/user')return options.headers.Authorization==='Bearer user-jwt'?json({id:owner,email_confirmed_at:'2026-10-01'}):json({},401);
-  if(url.pathname==='/rest/v1/rpc/pulse_meta_oauth_begin')return json(state);
+  if(url.pathname==='/rest/v1/rpc/pulse_meta_oauth_begin'||url.pathname==='/rest/v1/rpc/pulse_meta_oauth_begin_service')return json(state);
   if(url.pathname==='/rest/v1/rpc/pulse_meta_oauth_consume')return json(consume);
   if(url.pathname==='/rest/v1/rpc/pulse_meta_save_connection')return saveError?json({message:saveError,code:'P0001'},400):json(null);
   if(url.pathname==='/rest/v1/rpc/pulse_meta_keep_pending'||url.pathname==='/rest/v1/rpc/pulse_meta_drop_pending')return json(null);
@@ -39,6 +39,7 @@ test('início exige configuração e sessão; devolve o login unificado oficial 
  const r=rig(),res=await r.start(),{url}=await res.json(),link=new URL(url);
  assert.equal(link.origin+link.pathname,'https://www.facebook.com/dialog/oauth');
  for(const [k,v] of Object.entries({client_id:'123456',config_id:'1507197881297382',redirect_uri:config.redirectUri,response_type:'code',prompt:'login',state}))assert.equal(link.searchParams.get(k),v);
+ assert.ok(link.searchParams.get('scope').split(',').includes('instagram_manage_insights'));
  assert.ok(!url.includes('app-secret'));assert.equal(r.calls.find(c=>c.url.pathname.endsWith('oauth_begin')).options.headers.Authorization,'Bearer user-jwt');
 });
 test('retorno cancelado, inválido ou expirado não troca código nenhum',async()=>{
@@ -112,4 +113,17 @@ test('conta achada pela Página do Facebook é salva com a chave da Página, que
  const exchange=r.meta().find(c=>c.url.searchParams.get('grant_type')==='fb_exchange_token');assert.equal(exchange.url.searchParams.get('fb_exchange_token'),'token-portfolio-secreto');
  const accountsCall=r.meta().find(c=>c.url.pathname.endsWith('/me/accounts'));assert.equal(accountsCall.options.headers.Authorization,'Bearer token-usuario-longo');assert.match(accountsCall.url.searchParams.get('fields'),/access_token/);
  assert.ok(!res.headers.get('location').includes('token'));
+});
+test('o agente pede o login oficial com Insights e o estado não sai para outra sessão',async()=>{
+ const r=rig();
+ assert.equal((await r.start({authorization:'Bearer user-jwt',origin:'https://your-app.example'},'agent-start')).status,401);
+ const res=await r.start({authorization:'Bearer service-key'},'agent-start');
+ const out=await res.json();const link=new URL(out.url);
+ assert.equal(res.status,200);assert.equal(link.searchParams.get('state'),state);
+ assert.ok(link.searchParams.get('scope').split(',').includes('instagram_manage_insights'));
+ assert.ok(!out.url.includes('app-secret'));assert.match(out.aviso,/não pode ser reutilizado/);
+});
+test('conexão sem Insights avisa em português e ainda conclui',async()=>{
+ const res=await rig().back('code=codigo-meta&state='+state);
+ assert.equal(target(res),'conectado');assert.equal(new URL(res.headers.get('location')).searchParams.get('detalhe'),'insights-nao');
 });

@@ -59,3 +59,11 @@ Revisão da skill 2.0.0: `v2.0.0`. A demonstração e este guia podem receber aj
 Visão geral da produção, calendário semanal e mensal, campanhas, responsáveis, filtros, importação e ordenação de imagens do Canva, ficha de copy e legenda, agendamento oficial pela Meta e resultados com cobertura informada. Inclui o adaptador opcional do CRM e comandos para o agente preparar e acompanhar posts. Leia o [guia de publicação](pulse/references/publication.md).
 
 O planejamento funciona localmente. Publicação automática e resultados exigem seu próprio backend, sua conta autorizada na Meta e, para automações, um CRM compatível. Não há dados, contas ou credenciais do criador no pacote.
+
+## Publicação oficial no Instagram
+
+O pipeline usa a API oficial da Meta (Content Publishing e Facebook Login for Business). A entrega fica neste repositório até Júlio aprovar: **não aplique a migração nem publique no projeto `azbzjlkuohhmvucreltf`**. O guia completo, com CLI, testes e instalação da Supabase CLI no Mac e no Windows, está em [pulse/references/instagram-pipeline.md](pulse/references/instagram-pipeline.md).
+
+Na Meta, no app que o Pulse já usa, a configuração de login precisa incluir `instagram_basic`, `instagram_content_publish`, `instagram_manage_insights`, `pages_show_list`, `pages_read_engagement` e `business_management`. A conexão atual de @julioandrade.ia publica, mas ainda não tem `instagram_manage_insights`. Sem essa permissão o post sai; alcance, salvamentos e reproduções não entram. Se o app está no ar e outra pessoa for conectar, a Meta pede App Review dessas permissões. O administrador do app pode reconectar a própria conta antes da revisão.
+
+URI de retorno: `https://azbzjlkuohhmvucreltf.supabase.co/functions/v1/pulse-meta-connect`. Segredos só em `assets/.env` e nos segredos da função, nunca no git. O fuso padrão da CLI é `America/Maceio`.

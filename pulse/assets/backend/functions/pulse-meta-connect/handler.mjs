@@ -1,4 +1,4 @@
-import {exchangeUnifiedCode,inspectToken,longLivedUserToken,probeInstagramAccounts,unifiedLoginUrl} from '../_shared/instagram-graph.mjs';
+import {exchangeUnifiedCode,hasInsights,inspectToken,longLivedUserToken,probeInstagramAccounts,unifiedLoginUrl} from '../_shared/instagram-graph.mjs';
 import {APP_ORIGINS,UUID,createRest,replies} from '../_shared/supabase-rest.mjs';
 
 // Database refusals that the owner can act on; anything else is a generic failure.
@@ -35,7 +35,10 @@ export function makeHandler({url,key,appId,appSecret,configId,redirectUri,versio
   if(pageToken){saved=pageToken;try{({scopes,expiresAt}=await inspectToken({token:pageToken,appId,appSecret,version,fetchImpl:fetcher}));}catch{/* keep the user token's grants */}}
   await rest.rpc('pulse_meta_save_connection',{p_account:pending.account_id,p_user:pending.user_id,p_ig_user_id:account.id,p_username:account.username,p_token:saved,p_scopes:scopes,p_expires_at:expiresAt||new Date(Date.now()+NO_EXPIRY_YEARS*365*864e5).toISOString()});
   await rest.rpc('pulse_meta_drop_pending',{p_account:pending.account_id}).catch(()=>null);
+  return scopes;
  }
+ const insightsNote=scopes=>hasInsights(scopes)?'insights-sim':'insights-nao';
+ const insightsWarning='A permissão de Insights (instagram_manage_insights) não foi concedida. A publicação funciona, mas alcance, salvamentos e reproduções não serão lidos até você incluir essa permissão na Meta e conectar de novo.';
  async function tokenFromCode(code){
   const token=await exchangeUnifiedCode({appId,appSecret,redirectUri,code,version,fetchImpl:fetcher});
   try{return await longLivedUserToken({appId,appSecret,token,version,fetchImpl:fetcher});}catch{return token;}
@@ -49,9 +52,10 @@ export function makeHandler({url,key,appId,appSecret,configId,redirectUri,versio
   if(req.method==='OPTIONS')return new Response(null,{status:204,headers});
   if(!configured)return reply({error:'A conexão com a Meta ainda não foi configurada no Pulse.'},503);
   const authorization=req.headers.get('authorization')||'';
-  const user=await rest.user(authorization);if(!user)return reply({error:'Entre novamente no Pulse.'},401);
-  const raw=await req.text();if(raw.length>512)return reply({error:'Solicitação muito grande.'},413);
+  const raw=await req.text();if(raw.length>2000)return reply({error:'Solicitação muito grande.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Solicitação inválida.'},400);}
+  if(body.action==='agent-start')return agentStart(authorization,body,reply);
+  const user=await rest.user(authorization);if(!user)return reply({error:'Entre novamente no Pulse.'},401);
   if(!UUID.test(body.account_id||''))return reply({error:'Solicitação inválida.'},400);
   if(body.action==='resume')return resume(user,body.account_id,reply);
   if(body.action!=='start')return reply({error:'Ação desconhecida.'},400);
@@ -72,9 +76,19 @@ export function makeHandler({url,key,appId,appSecret,configId,redirectUri,versio
   if(!shared.accounts.length)return reply({error:'A Meta ainda não mostra o @ compartilhado. Confira em Configurações do negócio → Contas do Instagram e tente de novo.',report},409);
   const account=pickAccount(shared.accounts,pending.expected_handle);
   if(!account)return reply({error:'O @ compartilhado não é o desta conta.',report},409);
-  try{await saveConnection(pending,account,pending.token,granted,shared);}
+  let savedScopes=granted.scopes;
+  try{savedScopes=await saveConnection(pending,account,pending.token,granted,shared);}
   catch(error){return reply({error:{handle_mismatch:'O @ compartilhado não é o desta conta.',missing_publish_scope:'A permissão de publicar não foi concedida.',ig_in_use:'Esse Instagram já está conectado a outra conta do Pulse.'}[error.message]||'Não foi possível salvar a conexão.'},409);}
-  return reply({ok:true,username:account.username,report});
+  const insights=hasInsights(savedScopes);
+  return reply({ok:true,username:account.username,report,insights,aviso:insights?null:insightsWarning});
+ }
+ async function agentStart(authorization,body,reply){
+  if(authorization!=='Bearer '+key)return reply({error:'Não autorizado.'},401);
+  if(!UUID.test(body.account_id||''))return reply({error:'Informe a conta editorial.'},400);
+  try{
+   const state=await rest.rpc('pulse_meta_oauth_begin_service',{p_account:body.account_id});
+   return reply({url:unifiedLoginUrl({appId,configId,redirectUri,state}),aviso:'Abra este endereço uma única vez. O estado expira em 30 minutos e não pode ser reutilizado.'});
+  }catch{return reply({error:'Não foi possível iniciar a conexão. Confira se esta conta editorial existe e tem um proprietário confirmado.'},403);}
  }
 
  // Step 2 (redirect from the Meta): exchange the code, keep the portfolio token in Vault, return to the app.
@@ -97,9 +111,10 @@ export function makeHandler({url,key,appId,appSecret,configId,redirectUri,versio
   }
   const account=pickAccount(shared.accounts,pending.expected_handle);
   if(!account)return back('outra-conta');
-  try{await saveConnection(pending,account,token,granted,shared);}
+  let savedScopes=granted.scopes;
+  try{savedScopes=await saveConnection(pending,account,token,granted,shared);}
   catch(error){return back(SAVE_ERRORS[error.message]||'erro');}
-  return back('conectado');
+  return back('conectado',insightsNote(savedScopes));
  }
 
  return req=>req.method==='GET'?callback(req):start(req);

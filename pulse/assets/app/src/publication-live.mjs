@@ -2,7 +2,7 @@ import {mountPlanning} from './publication-planning-view.mjs';
 import {STAGES,planning,safeLink,imageFilesToJpegs} from './publication-planning.mjs';
 import {publicationMarkup} from './publication-template.mjs';
 import {emptyEditorialPost,localDateTime} from './publication-repository.mjs';
-import {CONNECTION_RESULTS,JOB_LABELS,captionCheck,isLocked,jobDetail} from './publication-schedule.mjs';
+import {JOB_LABELS,captionCheck,connectionMessage,isLocked,jobDetail} from './publication-schedule.mjs';
 import {normalizeContent,toUtc} from './publication-workflow.mjs';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const validSource=s=>{try{const u=new URL(s);return u.protocol==='https:'&&!u.username&&!u.password;}catch{return false;}};
@@ -220,7 +220,7 @@ export function mountCloudPublication(root,{repository}){
   try{const next=await repository.jobs(accountId);if(alive&&!busy){jobs=new Map(next.map(j=>[j.post_id,j]));render();}}catch{/* Keep the last known status offline. */}
  },60000);
  lock(true);report('Carregando contas de publicação…');
- const ready=repository.accounts().then(async data=>{if(!alive)return;accounts=data;$('account').innerHTML=accounts.map(a=>`<option value="${a.id}">${esc(a.name)}${a.instagram_handle?' · @'+esc(a.instagram_handle):''}</option>`).join('');if(!accounts.length){busy=false;root.innerHTML='<div class="heading-row"><div><h1>Publicação</h1><p>Seu acesso atual permite consultar o histórico. As contas editoriais precisam de uma liberação específica.</p></div></div>';return;}await chooseAccount(accounts[0].id);if(metaResult){changeView('connection');report((CONNECTION_RESULTS[metaResult]||CONNECTION_RESULTS.erro)+(metaDetail?' (diagnóstico: '+metaDetail.replace(/[^A-Za-z0-9._-]/g,'')+')':''));}}).catch(e=>{busy=false;if(alive){root.innerHTML='<div class="heading-row"><div><h1>Publicação</h1><p></p></div></div>';root.querySelector('p').textContent=e.message;}});
+ const ready=repository.accounts().then(async data=>{if(!alive)return;accounts=data;$('account').innerHTML=accounts.map(a=>`<option value="${a.id}">${esc(a.name)}${a.instagram_handle?' · @'+esc(a.instagram_handle):''}</option>`).join('');if(!accounts.length){busy=false;root.innerHTML='<div class="heading-row"><div><h1>Publicação</h1><p>Seu acesso atual permite consultar o histórico. As contas editoriais precisam de uma liberação específica.</p></div></div>';return;}await chooseAccount(accounts[0].id);if(metaResult){changeView('connection');report(connectionMessage(metaResult,metaDetail));}}).catch(e=>{busy=false;if(alive){root.innerHTML='<div class="heading-row"><div><h1>Publicação</h1><p></p></div></div>';root.querySelector('p').textContent=e.message;}});
  return {
   hasUnsavedChanges:()=>dirty||busy,
   async createFromSource(source){await ready;if(!alive||!accountId)return;await flush();current={...emptyEditorialPost(accountId),origin:source,content:{title:source.title.slice(0,160),caption:'',sources:source.sources,slides:[{headline:source.title.slice(0,120),body:'',alt:'Capa em preparação.'},{headline:'O que essa história precisa explicar?',body:source.brief.slice(0,600),alt:'Contexto para revisão.'}]}};slideIndex=0;dirty=true;fill();changeView('studio');await save();},
