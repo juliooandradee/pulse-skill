@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {makeHandler,friendlyError} from './handler.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {makeHandler,friendlyError,mapInsights} from './handler.mjs';
 const base='https://project.supabase.test',ws='33333333-3333-4333-8333-333333333333',post='55555555-5555-4555-8555-555555555555',uid='11111111-1111-4111-8111-111111111111';
 const paths=[1,2].map(i=>`${ws}/publication/${post}/abc123/slide-0${i}.jpg`);
 const job=(extra={})=>({job_id:'j1',lease_id:'l1',post_id:post,account_id:'a1',attempt:1,scheduled_at:'2026-10-28T20:55:00Z',assets:paths.map(path=>({path})),children:null,container_id:null,media_id:null,caption:'Comenta GUIA que eu te mando',ig_user_id:'17841400000000001',username:'perfil.exemplo',token:'ig-token-secreto',...extra});
@@ -15,6 +15,8 @@ function rig({jobs=[],checkpoint=true,meta={},context}={}){
    const name=url.pathname.replace('/rest/v1/rpc/','');const args=JSON.parse(body);rpc.push({name,args});
    if(name==='pulse_publisher_cron_ok')return json(args.p_secret==='c'.repeat(64));
    if(name==='pulse_publisher_claim')return json(queue.shift()||null);
+   if(name==='pulse_insights_due')return json(meta.insights||[]);
+   if(name==='pulse_meta_tokens_due')return json([]);
    if(name==='pulse_publisher_checkpoint')return json(typeof checkpoint==='function'?checkpoint(args):checkpoint);
    if(name==='pulse_publisher_test_context')return context instanceof Error?json({message:context.message},400):json(context);
    return json(true);
@@ -23,6 +25,8 @@ function rig({jobs=[],checkpoint=true,meta={},context}={}){
   if(url.pathname.endsWith('/media_publish'))return json({id:'900'});
   if(url.pathname.endsWith('/media')&&options.method==='POST')return json({id:calls.filter(c=>c.url.endsWith('/media')&&c.method==='POST').length+'0'});
   if(url.pathname.endsWith('/media'))return json({data:meta.recent||[]});
+  if(url.pathname.endsWith('/insights')){const metric=url.searchParams.get('metric');return json({data:[{name:metric,values:[{value:metric==='reach'?120:metric==='plays'?80:2}]}]});}
+  if(url.pathname.endsWith('/900')&&url.searchParams.get('fields')?.includes('like_count'))return json({like_count:9,comments_count:3});
   if(url.pathname.endsWith('/900'))return json({id:'900',permalink:'https://www.instagram.com/p/abc/',timestamp:'2026-10-28T21:00:00+0000'});
   return json({id:url.pathname.split('/').pop(),status_code:meta.status||'FINISHED'});
  };
@@ -103,3 +107,37 @@ test('testar sem publicar recusa sessão, origem, versão e arquivos fora do lug
 });
 
 test('reconciliation does not guess a permalink or republish when evidence is missing',async()=>{const r=rig({jobs:[job({container_id:'333'})],meta:{status:'PUBLISHED',recent:[]}});await r.cron();assert.ok(!r.meta().some(c=>c.method==='POST'));assert.equal(r.finish()[0].args.p_state,'retry');});
+
+test('publica uma imagem única sem marcá-la como item de carrossel',async()=>{
+ const image=job({media_type:'image',assets:[{path:paths[0],bucket:'pulse-private'}],caption:'Uma imagem'});
+ const r=rig({jobs:[image]});await r.cron();
+ const post=r.meta().find(c=>c.method==='POST'&&c.url.endsWith('/media'));
+ assert.equal(post.body.caption,'Uma imagem');assert.equal(post.body.is_carousel_item,undefined);assert.ok(post.body.image_url.includes('/pulse-private/'));
+ assert.equal(r.meta().filter(c=>c.url.endsWith('/media_publish')).length,1);
+ assert.equal(r.finish()[0].args.p_state,'published');
+});
+test('Reels em processamento não é publicado; quando termina, publica uma vez',async()=>{
+ const reel=job({media_type:'reel',assets:[{path:`${ws}/instagram/${post}/reel.mp4`,bucket:'pulse-reels'}],caption:'Um Reels'});
+ const waiting=rig({jobs:[reel],meta:{status:'IN_PROGRESS'}});await waiting.cron();
+ assert.ok(waiting.meta().some(c=>c.body?.media_type==='REELS'&&c.body.video_url.includes('/pulse-reels/')));
+ assert.ok(!waiting.meta().some(c=>c.url.endsWith('/media_publish')));
+ assert.equal(waiting.finish()[0].args.p_state,'retry');
+ const ready=rig({jobs:[reel]});await ready.cron();
+ assert.equal(ready.meta().filter(c=>c.url.endsWith('/media_publish')).length,1);
+ assert.equal(ready.finish()[0].args.p_patch.media_id,'900');
+});
+test('Insights oficiais entram na tabela do Pulse e não viram zero quando faltam',async()=>{
+ assert.equal(mapInsights({reach:10},'image').plays,null);assert.equal(mapInsights({},'reel').plays,null);assert.equal(mapInsights({views:15},'reel').plays,15);
+ const r=rig({meta:{insights:[{job_id:'j9',account_id:'a1',media_id:'17841400000000021',media_type:'reel',permalink:'https://www.instagram.com/reel/abc/',token:'ig-token-secreto'}]}});
+ await r.cron();
+ const save=r.rpc.find(x=>x.name==='pulse_insights_save');
+ assert.equal(save.args.p_reach,120);assert.equal(save.args.p_saves,2);assert.equal(save.args.p_plays,80);assert.equal(save.args.p_error,null);
+ assert.ok(!JSON.stringify(save.args).includes('ig-token-secreto'));
+ assert.ok(r.meta().every(c=>c.url.startsWith('https://graph.facebook.com/v26.0/')));
+});
+test('a chave de serviço pode acordar a fila; uma sessão comum não',async()=>{
+ const r=rig({jobs:[job()]});
+ assert.equal((await r.user({action:'tick'})).status,401);
+ const res=await r.user({action:'tick'},{authorization:'Bearer service-key'});
+ assert.equal(res.status,200);assert.deepEqual((await res.json()).processed,['published']);
+});

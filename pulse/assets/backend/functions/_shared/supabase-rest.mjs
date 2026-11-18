@@ -10,7 +10,7 @@ export function replies(req){
 
 export class RestError extends Error{constructor(message,{status=0,code=null}={}){super(message);this.status=status;this.code=code;}}
 
-export function createRest({url,key,fetcher=fetch}){
+export function createRest({url,key,fetcher=fetch,bucket='pulse-private'}){
  async function request(path,{body,authorization}={}){
   const res=await fetcher(url+path,{method:body===undefined?'GET':'POST',headers:{apikey:key,Authorization:authorization||'Bearer '+key,'Content-Type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)})});
   const data=await res.json().catch(()=>null);
@@ -23,9 +23,11 @@ export function createRest({url,key,fetcher=fetch}){
    if(!authorization?.startsWith('Bearer ')||authorization==='Bearer '+key)return null;
    try{const user=await request('/auth/v1/user',{authorization});return user?.id&&user.email_confirmed_at&&!user.is_anonymous?user:null;}catch{return null;}
   },
-  async sign(path,seconds){
-   const data=await request('/storage/v1/object/sign/pulse-private/'+path.split('/').map(encodeURIComponent).join('/'),{body:{expiresIn:seconds}});
-   if(!data?.signedURL)throw new RestError('Imagem indisponível.');
+  async sign(path,seconds,bucketName=bucket){
+   const chosen=bucketName||bucket;
+   if(!/^[a-z0-9-]{1,50}$/.test(chosen))throw new RestError('Bucket de mídia inválido.');
+   const data=await request(`/storage/v1/object/sign/${chosen}/`+path.split('/').map(encodeURIComponent).join('/'),{body:{expiresIn:seconds}});
+   if(!data?.signedURL)throw new RestError('Arquivo indisponível.');
    return url+'/storage/v1'+data.signedURL;
   }
  };

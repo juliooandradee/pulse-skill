@@ -44,7 +44,7 @@ export function makeEditorialHandler({url,key,version,crmUrl,crmKey,fetcher=fetc
    if(!cronOk&&!user&&!server)return reply({error:'Entre novamente no Pulse.'},401);
    if(body.action==='tick'&&(cronOk||server)){
     const jobs=await query('pulse_publication_jobs?state=eq.published&media_id=not.is.null&order=updated_at.desc&limit=20');
-    const results=[];for(const job of jobs){const [outcome]=await query('pulse_post_outcomes?post_id=eq.'+job.post_id);if(outcome?.collected_at&&Date.now()-Date.parse(outcome.collected_at)<3600000&&outcome.automation_state!=='failed')continue;const account=await rest.rpc('pulse_editorial_account_context',{p_account:job.account_id});results.push(await sync(job,account));if(results.length>=3)break;}
+    const results=[];for(const job of jobs){if(!job.post_id)continue;const [outcome]=await query('pulse_post_outcomes?post_id=eq.'+job.post_id);if(outcome?.collected_at&&Date.now()-Date.parse(outcome.collected_at)<3600000&&outcome.automation_state!=='failed')continue;const account=await rest.rpc('pulse_editorial_account_context',{p_account:job.account_id});results.push(await sync(job,account));if(results.length>=3)break;}
     return reply({ok:true,processed:results});
    }
    if(!UUID.test(body.account_id||''))return reply({error:'Conta inválida.'},400);
@@ -53,7 +53,7 @@ export function makeEditorialHandler({url,key,version,crmUrl,crmKey,fetcher=fetc
    if(body.action==='templates')return reply(await crm({action:'templates',username:account.username}));
    if(body.action==='results'){
     const jobs=await query('pulse_publication_jobs?account_id=eq.'+account.id+'&state=eq.published&media_id=not.is.null&order=updated_at.desc&limit=10');
-    for(const job of jobs)await sync(job,account);return reply({ok:true,message:jobs.length?'Resultados conferidos. Veja a data e a cobertura de cada post.':'Ainda não há posts confirmados nesta conta.'});
+    for(const job of jobs){if(job.post_id)await sync(job,account);}return reply({ok:true,message:jobs.length?'Resultados conferidos. Veja a data e a cobertura de cada post.':'Ainda não há posts confirmados nesta conta.'});
    }
    return reply({error:'Ação desconhecida.'},400);
   }catch(error){return reply({error:error?.code==='42501'?'Você não tem acesso a esta conta.':error?.message==='not_owner'?'Você não tem acesso a esta conta.':'Não foi possível concluir esta operação.'},error?.code==='42501'?403:400);}

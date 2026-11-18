@@ -1,4 +1,4 @@
-import {InstagramClient,MetaError} from '../_shared/instagram-graph.mjs';
+import {InstagramClient,MetaError,inspectToken,longLivedUserToken} from '../_shared/instagram-graph.mjs';
 import {APP_ORIGINS,UUID,createRest,replies} from '../_shared/supabase-rest.mjs';
 
 const ASSET=/^[0-9a-f-]{36}\/publication\/[0-9a-f-]{36}\/[a-z0-9]{6,32}\/slide-[0-9]{2}\.jpg$/;
@@ -21,22 +21,48 @@ export function friendlyError(error){
  return {state:'failed',error:error?.code?`O Instagram recusou a publicação (código ${error.code}). Revise o post e agende de novo.`:'Não foi possível publicar este post. Revise e agende de novo.'};
 }
 
-export function makeHandler({url,key,version,fetcher=fetch,sleep=ms=>new Promise(r=>setTimeout(r,ms)),budgetMs=100000,pollMs=3000,onPublished=async()=>{}}){
- const rest=createRest({url,key,fetcher}),mediaHost=new URL(url).hostname;
+const numberOrNull=value=>typeof value==='number'&&Number.isFinite(value)?value:null;
+// Official Insights values only. A missing metric stays null; a zero returned by the Meta is kept.
+export function mapInsights(raw={},mediaType,counts={}){
+ const plays=mediaType==='reel'?numberOrNull(raw.plays)??numberOrNull(raw.views):null;
+ return {
+  reach:numberOrNull(raw.reach),
+  saves:numberOrNull(raw.saved),
+  shares:numberOrNull(raw.shares),
+  comments:numberOrNull(raw.comments)??numberOrNull(counts.comments_count),
+  likes:numberOrNull(raw.likes)??numberOrNull(counts.like_count),
+  plays
+ };
+}
+function containerError(row,fallback){
+ const detail=String(row?.status||'').replace(/https?:\/\/\S+/g,'').replace(/\s+/g,' ').trim().slice(0,180);
+ return detail?`${fallback} (${row.status_code}: ${detail})`:fallback;
+}
+
+export function makeHandler({url,key,version,fetcher=fetch,sleep=ms=>new Promise(r=>setTimeout(r,ms)),budgetMs=100000,pollMs=3000,onPublished=async()=>{},bucket='pulse-private',appId='',appSecret=''}){
+ const rest=createRest({url,key,fetcher,bucket}),mediaHost=new URL(url).hostname;
  // Unified Login tokens call graph.facebook.com with the Instagram professional account ID.
  const client=token=>new InstagramClient({token,version,login:'facebook',fetchImpl:fetcher,mediaHosts:[mediaHost]});
 
  async function waitFinished(ig,containerId,tries=8){
-  for(let i=0;i<tries;i++){const {status_code}=await ig.status(containerId);if(status_code!=='IN_PROGRESS')return status_code;await sleep(pollMs);}
-  return 'IN_PROGRESS';
+  let row={status_code:'IN_PROGRESS'};
+  for(let i=0;i<tries;i++){row=await ig.containerStatus(containerId);if(row.status_code!=='IN_PROGRESS')return row;await sleep(pollMs);}
+  return row;
  }
- async function createCarousel(ig,igUserId,paths,caption,checkpoint=async()=>true){
-  const urls=[];for(const path of paths)urls.push(await rest.sign(path,3600));
+ async function createCarousel(ig,igUserId,assets,caption,checkpoint=async()=>true){
+  const urls=[];
+  for(const asset of assets)urls.push(await rest.sign(typeof asset==='string'?asset:asset.path,3600,typeof asset==='string'?undefined:asset.bucket));
   const children=[];for(const imageUrl of urls)children.push((await ig.image(igUserId,{url:imageUrl})).id);
   if(!await checkpoint({phase:'children_created',children}))return null;
   const container=(await ig.carousel(igUserId,children,caption)).id;
   if(!await checkpoint({phase:'container_created',container_id:container}))return null;
   return container;
+ }
+ async function createSingle(ig,job,checkpoint){
+  const asset=job.assets[0],url=await rest.sign(asset.path,3600,asset.bucket);
+  const created=job.media_type==='reel'?await ig.reel(job.ig_user_id,{url},job.caption):await ig.feedImage(job.ig_user_id,{url},job.caption);
+  if(!await checkpoint({phase:'container_created',container_id:created.id}))return null;
+  return created.id;
  }
  // After an uncertain publish the container says PUBLISHED; the caption identifies the media.
  async function findPublished(ig,job){
@@ -51,20 +77,21 @@ export function makeHandler({url,key,version,fetcher=fetch,sleep=ms=>new Promise
   const finish=(state,patch={})=>rest.rpc('pulse_publisher_finish',{p_job:job.job_id,p_lease:job.lease_id,p_state:state,p_patch:patch});
   const done=async media=>{if(!media.id||!media.permalink){await finish('retry',{phase:'verification_pending',retry_in_seconds:60});return 'retry';}const saved=await finish('published',{phase:'published',media_id:media.id,permalink:media.permalink,...(media.timestamp?{published_at:new Date(media.timestamp).toISOString()}:{})});if(saved)await onPublished(job).catch(()=>null);return 'published';};
   try{
+   const type=job.media_type||'carousel';
    if(job.media_id)return await done(await ig.media(job.media_id));
    let container=job.container_id;
    if(container){
-    const status=(await ig.status(container)).status_code;
+    const status=(await ig.containerStatus(container)).status_code;
     if(status==='PUBLISHED'){const media=await findPublished(ig,job);if(media)return await done(media);await finish('retry',{phase:'verification_pending',retry_in_seconds:120,error:'O Instagram processou a publicação. Aguardando confirmação do link, sem publicar novamente.'});return 'retry';}
-    if(status==='IN_PROGRESS'){await finish('retry',{phase:'container_processing',retry_in_seconds:60});return 'retry';}
+    if(status==='IN_PROGRESS'){await finish('retry',{phase:'container_processing',retry_in_seconds:type==='reel'?90:60});return 'retry';}
     if(status!=='FINISHED')container=null;
    }
    if(!container){
-    container=await createCarousel(ig,job.ig_user_id,job.assets.map(a=>a.path),job.caption,checkpoint);
+    container=type==='carousel'?await createCarousel(ig,job.ig_user_id,job.assets,job.caption,checkpoint):await createSingle(ig,job,checkpoint);
     if(!container)return 'cancelled';
-    const status=await waitFinished(ig,container);
-    if(status==='IN_PROGRESS'){await finish('retry',{phase:'container_processing',retry_in_seconds:60});return 'retry';}
-    if(status!=='FINISHED'){await finish('failed',{phase:'container_error',container_id:null,children:null,error:'O Instagram não aceitou as imagens deste carrossel. Gere as imagens de novo e agende outra vez.'});return 'failed';}
+    const row=await waitFinished(ig,container,type==='reel'?4:8);
+    if(row.status_code==='IN_PROGRESS'){await finish('retry',{phase:'container_processing',retry_in_seconds:type==='reel'?90:60});return 'retry';}
+    if(row.status_code!=='FINISHED'){await finish('failed',{phase:'container_error',container_id:null,children:null,error:containerError(row,type==='reel'?'O Instagram não aceitou o vídeo deste Reels. Envie um MP4 vertical e agende de novo.':'O Instagram não aceitou o arquivo. Revise o formato e agende de novo.')});return 'failed';}
    }
    if(!await checkpoint({phase:'publishing'}))return 'cancelled';
    const media=await ig.publish(job.ig_user_id,container);
@@ -80,6 +107,45 @@ export function makeHandler({url,key,version,fetcher=fetch,sleep=ms=>new Promise
   return outcome.state;
  }
 
+ async function pullInsights(){
+  const due=await rest.rpc('pulse_insights_due',{p_limit:3}).catch(()=>[]);
+  if(!Array.isArray(due)||!due.length)return [];
+  const saved=[];
+  for(const item of due){
+   if(!item?.media_id||!item.token)continue;
+   const ig=client(item.token);
+   const names=item.media_type==='reel'?['reach','saved','shares','comments','likes','views','plays']:['reach','saved','shares','comments','likes'];
+   const raw={};let error=null;
+   for(const metric of names){
+    try{
+     const data=await ig.insights(item.media_id,[metric]);
+     const value=data?.data?.[0]?.values?.[0]?.value??data?.data?.[0]?.total_value?.value;
+     if(typeof value==='number')raw[metric]=value;
+    }catch(err){if(err?.code===190)error='A conexão com o Instagram expirou. Conecte de novo para atualizar os Insights.';}
+   }
+   let counts={};try{counts=await ig.counts(item.media_id);}catch{/* likes and comments may still come from Insights */}
+   const metrics=mapInsights(raw,item.media_type,counts);
+   if(!error&&metrics.reach==null&&metrics.likes==null&&metrics.plays==null)error='A Meta não devolveu Insights deste post. Inclua instagram_manage_insights na conexão e tente de novo.';
+   await rest.rpc('pulse_insights_save',{p_media_id:item.media_id,p_account:item.account_id,p_job:item.job_id,p_type:item.media_type||'carousel',p_permalink:item.permalink||null,p_reach:metrics.reach,p_saves:metrics.saves,p_shares:metrics.shares,p_comments:metrics.comments,p_likes:metrics.likes,p_plays:metrics.plays,p_raw:raw,p_error:error}).catch(()=>null);
+   saved.push(item.media_id);
+  }
+  return saved;
+ }
+ async function refreshDue(){
+  if(!appId||!appSecret)return 0;
+  const due=await rest.rpc('pulse_meta_tokens_due',{p_within:'15 days'}).catch(()=>[]);
+  if(!Array.isArray(due)||!due.length)return 0;
+  let refreshed=0;
+  for(const row of due){
+   try{
+    const token=await longLivedUserToken({appId,appSecret,token:row.token,version,fetchImpl:fetcher});
+    const inspected=await inspectToken({token,appId,appSecret,version,fetchImpl:fetcher});
+    await rest.rpc('pulse_meta_refresh_result',{p_account:row.account_id,p_token:token,p_expires_at:inspected.expiresAt||new Date(Date.now()+60*864e5).toISOString(),p_expired:false});
+    refreshed++;
+   }catch{await rest.rpc('pulse_meta_refresh_result',{p_account:row.account_id,p_token:null,p_expires_at:null,p_expired:false}).catch(()=>null);}
+  }
+  return refreshed;
+ }
  async function tick(){
   const started=Date.now(),results=[];
   while(Date.now()-started<budgetMs&&results.length<10){
@@ -87,7 +153,9 @@ export function makeHandler({url,key,version,fetcher=fetch,sleep=ms=>new Promise
    if(!job)break;
    results.push(await publishJob(job));
   }
-  return {processed:results};
+  const insights=await pullInsights().catch(()=>[]);
+  const refreshed=await refreshDue().catch(()=>0);
+  return {processed:results,insights:insights.length,refreshed};
  }
 
  // "Testar sem publicar": builds the carousel on Instagram and stops before media_publish.
@@ -101,7 +169,7 @@ export function makeHandler({url,key,version,fetcher=fetch,sleep=ms=>new Promise
   if(body.assets.length!==context.slides||!body.assets.every((p,i)=>typeof p==='string'&&ASSET.test(p)&&p.startsWith(prefix)&&p.endsWith(`slide-${String(i+1).padStart(2,'0')}.jpg`)))return [{error:'Gere as imagens de todos os slides antes de testar.'},400];
   try{
    const ig=client(context.token),container=await createCarousel(ig,context.ig_user_id,body.assets,context.caption);
-   const status=await waitFinished(ig,container);
+   const status=(await waitFinished(ig,container)).status_code;
    if(status==='FINISHED'||status==='IN_PROGRESS')return [{ok:true,username:context.username,message:`O Instagram de @${context.username} aceitou as ${context.slides} imagens e a legenda${status==='IN_PROGRESS'?' (ainda processando)':''}. Nada foi publicado.`},200];
    return [{error:'O Instagram não aceitou as imagens deste carrossel. Gere as imagens de novo.'},422];
   }catch(error){return [{error:friendlyError(error).error.replace(/ e agende( de novo| outra vez)?\./,'.')},422];}
@@ -125,7 +193,13 @@ export function makeHandler({url,key,version,fetcher=fetch,sleep=ms=>new Promise
   }
   const raw=await req.text();if(raw.length>4096)return reply({error:'Solicitação muito grande.'},413);
   let body;try{body=JSON.parse(raw);}catch{return reply({error:'Solicitação inválida.'},400);}
-  const user=await caller(req.headers.get('authorization')||'',body);
+  const authorization=req.headers.get('authorization')||'';
+  if(body.action==='tick'||body.action==='insights'){
+   if(authorization!=='Bearer '+key)return reply({error:'Não autorizado.'},401);
+   if(body.action==='insights')return reply({insights:await pullInsights()});
+   return reply(await tick());
+  }
+  const user=await caller(authorization,body);
   if(!user)return reply({error:'Entre novamente no Pulse.'},401);
   if(body.action!=='test')return reply({error:'Ação desconhecida.'},400);
   const [data,status]=await dryRun(user,body);return reply(data,status);

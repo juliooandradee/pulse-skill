@@ -16,6 +16,12 @@ export const CONNECTION_RESULTS={
  'erro-meta':'A Meta não confirmou a conexão. Tente de novo em alguns minutos.',
  erro:'Não foi possível salvar a conexão. Tente de novo.'
 };
+export function connectionMessage(code,detail){
+ const base=CONNECTION_RESULTS[code]||CONNECTION_RESULTS.erro;
+ if(detail==='insights-nao')return base+' A permissão de Insights não foi concedida. Dá para publicar, mas alcance, salvamentos e reproduções só entram depois de reconectar com instagram_manage_insights.';
+ if(detail==='insights-sim')return base+' A permissão de Insights foi concedida.';
+ return base+(detail?` (diagnóstico: ${String(detail).replace(/[^A-Za-z0-9._-]/g,'')})`:'');
+}
 
 // Instagram shows about 125 characters before "mais": the call to action belongs there.
 export function captionCheck(caption=''){

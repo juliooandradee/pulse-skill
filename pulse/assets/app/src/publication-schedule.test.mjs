@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {captionCheck,assetPath,assetBatch,isLocked,jobDetail,CONNECTION_RESULTS} from './publication-schedule.mjs';
+import {captionCheck,assetPath,assetBatch,isLocked,jobDetail,CONNECTION_RESULTS,connectionMessage} from './publication-schedule.mjs';
 
 test('legenda mostra o trecho antes do "mais" e avisa limites do Instagram',()=>{
  const ok=captionCheck('Comenta GUIA que eu te mando o material.\n\nResto da legenda.');
@@ -18,4 +18,6 @@ test('post publicado ou publicando fica travado; detalhe mostra horário de Bras
 });
 test('cada retorno da Meta tem uma mensagem',()=>{
  for(const code of ['conectado','cancelado','expirado','invalido','sem-conta','outra-conta','sem-permissao','conta-em-uso','erro-meta','erro'])assert.ok(CONNECTION_RESULTS[code]);
+ assert.match(connectionMessage('conectado','insights-nao'),/instagram_manage_insights/);
+ assert.match(connectionMessage('conectado','insights-sim'),/concedida/);
 });

@@ -32,20 +32,32 @@ export class InstagramClient{
   else {headers['Content-Type']='application/x-www-form-urlencoded';options.body=new URLSearchParams(values);}
   return readJson(await call(this.fetch,url,options),method);
  }
- image(igUserId,asset){const u=new URL(asset.url);assert(u.protocol==='https:'&&!u.username&&!u.password&&this.mediaHosts.has(u.hostname),'Arquivo fora do armazenamento autorizado.');return this.request(`${igUserId}/media`,{method:'POST',values:{image_url:u.href,is_carousel_item:'true'}});}
+ #storedUrl(asset){const u=new URL(asset.url);assert(u.protocol==='https:'&&!u.username&&!u.password&&this.mediaHosts.has(u.hostname),'Arquivo fora do armazenamento autorizado.');return u.href;}
+ image(igUserId,asset){return this.request(`${igUserId}/media`,{method:'POST',values:{image_url:this.#storedUrl(asset),is_carousel_item:'true'}});}
+ feedImage(igUserId,asset,caption){return this.request(`${igUserId}/media`,{method:'POST',values:{image_url:this.#storedUrl(asset),caption}});}
+ reel(igUserId,asset,caption){return this.request(`${igUserId}/media`,{method:'POST',values:{media_type:'REELS',video_url:this.#storedUrl(asset),caption,share_to_feed:'true'}});}
  carousel(igUserId,children,caption){assert(children.length>=2&&children.length<=10,'Quantidade de slides inválida.');return this.request(`${igUserId}/media`,{method:'POST',values:{media_type:'CAROUSEL',children:children.join(','),caption}});}
  status(id){return this.request(id,{values:{fields:'id,status_code'}});}
+ containerStatus(id){return this.request(id,{values:{fields:'id,status_code,status'}});}
  publish(igUserId,containerId){return this.request(`${igUserId}/media_publish`,{method:'POST',values:{creation_id:containerId}});}
  media(id){return this.request(id,{values:{fields:'id,permalink,timestamp,media_type'}});}
+ counts(id){return this.request(id,{values:{fields:'like_count,comments_count'}});}
  recentMedia(igUserId){return this.request(`${igUserId}/media`,{values:{fields:'id,caption,permalink,timestamp',limit:'10'}});}
  insights(id,metrics){assert(metrics?.length&&metrics.every(x=>/^[a-z_]+$/.test(x)),'Selecione as métricas compatíveis com esta versão.');return this.request(`${id}/insights`,{values:{metric:metrics.join(',')}});}
 }
 
+// Facebook Login for Business. The Meta app's login configuration must include the same scopes;
+// the scope parameter asks for them again so Insights is not left behind.
+export const LOGIN_SCOPES=['instagram_basic','instagram_content_publish','instagram_manage_insights','pages_show_list','pages_read_engagement','business_management'];
+export function hasInsights(scopes){return (scopes||[]).some(scope=>scope==='instagram_manage_insights'||scope==='instagram_business_manage_insights');}
+
 // Instagram API with Unified Login: Facebook Login for Business with a config_id. The token belongs to the
 // customer's business portfolio (business integration system user) and does not expire.
-export function unifiedLoginUrl({appId,configId,redirectUri,state}){
+export function unifiedLoginUrl({appId,configId,redirectUri,state,scopes=LOGIN_SCOPES}){
  const url=new URL('https://www.facebook.com/dialog/oauth');
- for(const [k,v] of Object.entries({client_id:appId,config_id:configId,redirect_uri:redirectUri,response_type:'code',override_default_response_type:'true',prompt:'login',state}))url.searchParams.set(k,v);
+ const params={client_id:appId,redirect_uri:redirectUri,response_type:'code',override_default_response_type:'true',prompt:'login',state,scope:scopes.join(',')};
+ if(configId)params.config_id=configId;
+ for(const [k,v] of Object.entries(params))url.searchParams.set(k,v);
  return url.href;
 }
 async function graphGet(fetchImpl,version,path,values){
